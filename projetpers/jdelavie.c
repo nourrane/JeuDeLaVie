@@ -6,9 +6,22 @@
 
 SDL_Surface* ecran;
 SDL_Surface * rectangle;
-SDL_Event event;
+
+
 long tick;
 int gameRunning;
+
+void freeTabInt(int** T, int nbrLine, int nbrColumn)
+{
+    /*
+    Lib�re un tableau 2D d'entier
+    */
+	for (int i = 0; i < nbrLine; i++)
+	{
+		free(T[i]);
+	}
+	free(T);
+}
 
 void printTab(int** T, int n, int m)
 {
@@ -87,7 +100,6 @@ void saveMap(int** T, int n, int m)
     fclose(F); 
     printf("Map save !\n");
 }
-
 int ** mooveBlock(int ** T, int n)
 {
     int i,j;
@@ -103,55 +115,61 @@ int ** mooveBlock(int ** T, int n)
             {
                 New[i][j]=1;
             }
-            else if (T[i][j]==1 && voisin<2){
-                New[i][j]=0;
-            }
-            else {
-                New[i][j]=T[i][j];
+            else if (T[i][j]==1 && voisin>=2)
+            {
+                New[i][j]=1;
             }
         }
     }
-    T=New;
+    printf("ceci est t:\n");
+    
+    printTab(T,n,n);
+    T=New,
+    freeTabInt(T,n,n);
+
+    printf("ceci est new\n");
     printTab(T,n,n);
     return T;
 }
+
 void get_input(int ** T, int n, int m)
 {
     /*
     r�cup�re les diff�rents event dont les entr�s clavier 
     et la croix pour fermer
     */
-
-    SDL_WaitEvent(&event);
-    switch (event.type)
-    {
-    case SDL_QUIT:
-        printf("Voulez vous sauvegarder ? O/N\n");
-        char c;
-        scanf("%c", &c);
-        if (c != 'o' && c!='n') scanf("%c", &c);
-        if(c == 'O' || c == 'o' || c == '0')
-            saveMap(T, n, m);
-        gameRunning = 0;
-        break;
-    case SDL_KEYDOWN:
-        switch (event.key.keysym.sym) {
-        case SDLK_SPACE:
-            mooveBlock(T, n);
+    SDL_Event event;
+    int cont=1;
+    while(cont){   
+        SDL_WaitEvent(&event);
+        switch (event.type)
+        {
+        case SDL_QUIT:
+            printf("Voulez vous sauvegarder ? O/N\n");
+            char c;
+            scanf("%c", &c);
+            if (c != 'o' && c!='n') scanf("%c", &c);
+            if(c == 'O' || c == 'o' || c == '0')
+                saveMap(T, n, m);
+            gameRunning = 0;
+            cont=0;
             break;
-        case SDLK_s:
-            saveMap(T, n, m);
-            break;
-        case SDLK_l:
-            //freeTabInt(T, n, m);
-            //T = loadMap(&n, &m);
-            break;
-
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym) {
+            case SDLK_SPACE:
+                T=mooveBlock(T, n);
+                cont=0;
+                break;
+            case SDLK_s:
+                saveMap(T, n, m);
+                cont=0;
+                break;
+            default:
+                break;
+            }
         default:
             break;
         }
-    default:
-        break;
     }
 }
 
@@ -167,6 +185,8 @@ void draw(int** T, int n, int m)
     /*
     dessine les elemments sur la fenetre 
     */
+   printf("On passe par le draw\n");
+   printTab(T,n,m);
     SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255));
 
     rectangle=NULL;
@@ -175,38 +195,25 @@ void draw(int** T, int n, int m)
 
 	SDL_Rect position;
     int i;
-	for (i=0;i<t;i++)
+	for (i=0;i<n;i++)
     {
-		for (int j=0;j<t;j+=2)
+		for (int j=0;j<m;j++)
         {	
-				position.x=i*R;
-				position.y=j*R;
+            if (T[i][j]==1)
+            {
+                printf("(%d,%d)",i,j);
+                position.y=i*R;
+				position.x=j*R;
 				SDL_BlitSurface(rectangle,NULL,ecran,&position);
-			}
-        i++;
-        for (int j=1;j<t;j+=2)
-        {	
-				position.x=i*R;
-				position.y=j*R;
-				SDL_BlitSurface(rectangle,NULL,ecran,&position);
+            }
 		}
+       
 	}
 	
 		
     SDL_Flip(ecran);
 }
 
-void freeTabInt(int** T, int nbrLine, int nbrColumn)
-{
-    /*
-    Lib�re un tableau 2D d'entier
-    */
-	for (int i = 0; i < nbrLine; i++)
-	{
-		free(T[i]);
-	}
-	free(T);
-}
 
 void unload(int ** T, int n, int m)
 {
@@ -310,11 +317,16 @@ void logic()
     int n = t;
     int m = n;
     int ** T = load(n);
+    draw(T, n, m);
     while (gameRunning)
     {   
         tick++;
         update(T, n, m);
         draw(T, n, m);
+        printf("T ini\n");
+        printTab(T,n,n);
+        
+
     }
     printf("Unload\n");
     unload(T, n, m);
