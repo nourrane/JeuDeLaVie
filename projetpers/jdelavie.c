@@ -116,7 +116,7 @@ int ** mooveBlock(int ** T, int n)
         {
             voisin = N[i-1][j-1]+N[i-1][j]+N[i-1][j+1]+N[i][j-1]+N[i][j+1]+N[i+1][j-1]+N[i+1][j]+N[i+1][j+1];
 
-            if (voisin==3)
+            if (voisin==3 && N[i][j]==0)
             {
                 T[i][j]=1;
             }
@@ -184,21 +184,18 @@ void draw(int** T, int n, int m)
     dessine les elemments sur la fenetre 
     */
     SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255));
-
     rectangle=NULL;
-
 	rectangle= SDL_CreateRGBSurface(SDL_HWSURFACE ,R,R,32,0,0,0,0);
-
 	SDL_Rect position;
     int i;
 	for (i=0;i<n;i++)
     {
 		for (int j=0;j<m;j++)
         {	
+            position.y=i*R; 
+			position.x=j*R;
             if (T[i][j]==1)
             {
-                position.y=i*R;
-				position.x=j*R;
 				SDL_BlitSurface(rectangle,NULL,ecran,&position);
             }
 		}
@@ -263,9 +260,7 @@ void CreatMap(int **T,int n)
     /*
    CREATION DE MAP SUR L'INTERFACE GRAPHIQUE
     */
-   
-   draw(T,n,n);
-   
+    draw(T,n,n);
     int cont=1;
     int x,y;
     while(cont){   
@@ -315,13 +310,8 @@ void CreatMap(int **T,int n)
     }
 }
 
-int ** load(int n) 
+void createcran(int n)
 {
-    /*
-    Initialise la fen�tre la boucle de jeu et la table de jeu
-    � la taille donn�.
-    */
-    printf("initializing the game\n");
     tick = 0;
     gameRunning = 1;
 
@@ -334,11 +324,16 @@ int ** load(int n)
 
     ecran = NULL;
 
-    if ((ecran = SDL_SetVideoMode(R*n, R*n, 32, SDL_HWSURFACE)) == NULL)
+    if ((ecran = SDL_SetVideoMode(n*R, n*R, 32, SDL_HWSURFACE)) == NULL)
     {
         fprintf(stderr, "Erreur VideoMode %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
+    SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255));
+}
+
+int ** load(int * n) 
+{
 
     printf("n: commencer une nouvelle partie \nc: continuer une partie enregistrée\n");
     int** T;
@@ -348,18 +343,27 @@ int ** load(int n)
     if (ch=='n' || ch=='N')
     {
 
-    //printf("Quel taille de fenêtre souhaitez vous? (pour 5 pixels par exemple, tapez 5)");
-    //scanf("%d",&n);
+    printf("Quel taille de fenêtre souhaitez vous? (pour 5 pixels par exemple, tapez 5 )\n");
+    scanf("%d",n);
     printf("Cliquer sur la surface pour créer votre figure, puis tapez échape lorqu'elle est finie\n");
 
-    T = callocTabInt(n, n);  
-    CreatMap(T,n);
-
+    T = callocTabInt(*n, *n); 
+    createcran(*n);
+    CreatMap(T,*n);
+    draw(T,*n,*n);
     }
     else
     { 
-        T=loadMap(&n,&n);
+        T=loadMap(n,n);
+        createcran(t);
+        draw(T,t,t);
     }
+    /*
+    Initialise la fen�tre la boucle de jeu et la table de jeu
+    � la taille donn�.
+    */
+    
+    draw(T,*n,*n);
     return T;
 }
 
@@ -368,8 +372,8 @@ void logic()
     /*
     boucle de jeu 
     */
-    int n=t;
-    int ** T = load(n);
+    int n;
+    int ** T = load(&n);
     printf("Cliquez sur la touche espace pour faire évoluer votre jeu\n");
     while (gameRunning)
     {   
