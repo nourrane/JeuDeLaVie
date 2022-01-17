@@ -103,32 +103,31 @@ void saveMap(int** T, int n, int m)
 int ** mooveBlock(int ** T, int n)
 {
     int i,j;
-    int ** New=callocTabInt(n,n);
+    int ** N=callocTabInt(n,n);
+    for (int i =0; i<n; i++){
+        for (int j=0;j<n;j++){
+            N[i][j]=T[i][j];
+        }
+    }
     int voisin;
     for (i=1;i<n-1;i++)
     {
         for (j=1;j<n-1;j++)
         {
-            voisin = T[i-1][j-1]+T[i-1][j]+T[i-1][j+1]+T[i][j-1]+T[i][j+1]+T[i+1][j-1]+T[i+1][j]+T[i+1][j+1];
+            voisin = N[i-1][j-1]+N[i-1][j]+N[i-1][j+1]+N[i][j-1]+N[i][j+1]+N[i+1][j-1]+N[i+1][j]+N[i+1][j+1];
 
             if (voisin==3)
             {
-                New[i][j]=1;
+                T[i][j]=1;
             }
-            else if (T[i][j]==1 && voisin>=2)
+            else if (N[i][j]==1 && voisin<2)
             {
-                New[i][j]=1;
+                T[i][j]=0;
             }
         }
     }
-    printf("ceci est t:\n");
-    
-    printTab(T,n,n);
-    T=New,
-    freeTabInt(T,n,n);
 
-    printf("ceci est new\n");
-    printTab(T,n,n);
+    freeTabInt(N,n,n);
     return T;
 }
 
@@ -185,8 +184,6 @@ void draw(int** T, int n, int m)
     /*
     dessine les elemments sur la fenetre 
     */
-   printf("On passe par le draw\n");
-   printTab(T,n,m);
     SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255));
 
     rectangle=NULL;
@@ -201,7 +198,6 @@ void draw(int** T, int n, int m)
         {	
             if (T[i][j]==1)
             {
-                printf("(%d,%d)",i,j);
                 position.y=i*R;
 				position.x=j*R;
 				SDL_BlitSurface(rectangle,NULL,ecran,&position);
@@ -228,7 +224,8 @@ void unload(int ** T, int n, int m)
 int ** loadMap(int* n, int* m)
 {
     char S[100];
-    printf("Entrer le nom du fichier :\n");
+    printf("fichiers disponibles: 1) osciller\n");
+    printf("Entrer le numéros du fichier :\n");
     scanf("%s", S);
     char* fileName = (char*)calloc(strlen(S)+10, sizeof(char));
     sprintf(fileName, "save/%s", S);
@@ -299,13 +296,6 @@ int ** load(int n)
 
         T=loadMap(&n,&n);
     }
-
-    /*
-    generateNewBlock(T, n, m, int((n + 0.5) / 2));
-    printf("Point = %d\n", point);
-    printTab(T, n, m);
-    printf("---------------------------\n\n\n");
-    */
     return T;
 }
 
@@ -317,13 +307,11 @@ void logic()
     int n = t;
     int m = n;
     int ** T = load(n);
-    draw(T, n, m);
     while (gameRunning)
     {   
         tick++;
-        update(T, n, m);
         draw(T, n, m);
-        printf("T ini\n");
+        update(T, n, m);
         printTab(T,n,n);
         
 
