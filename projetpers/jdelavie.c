@@ -7,8 +7,21 @@
 SDL_Surface* ecran;
 SDL_Surface * rectangle;
 SDL_Event event;
+
 long tick;
 int gameRunning;
+
+void freeTabInt(int** T, int nbrLine, int nbrColumn)
+{
+    /*
+    Lib�re un tableau 2D d'entier
+    */
+	for (int i = 0; i < nbrLine; i++)
+	{
+		free(T[i]);
+	}
+	free(T);
+}
 
 void printTab(int** T, int n, int m)
 {
@@ -87,71 +100,74 @@ void saveMap(int** T, int n, int m)
     fclose(F); 
     printf("Map save !\n");
 }
-
 int ** mooveBlock(int ** T, int n)
 {
     int i,j;
-    int ** New=callocTabInt(n,n);
+    int ** N=callocTabInt(n,n);
+    for (int i =0; i<n; i++){
+        for (int j=0;j<n;j++){
+            N[i][j]=T[i][j];
+        }
+    }
     int voisin;
     for (i=1;i<n-1;i++)
     {
         for (j=1;j<n-1;j++)
         {
-            voisin = T[i-1][j-1]+T[i-1][j]+T[i-1][j+1]+T[i][j-1]+T[i][j+1]+T[i+1][j-1]+T[i+1][j]+T[i+1][j+1];
+            voisin = N[i-1][j-1]+N[i-1][j]+N[i-1][j+1]+N[i][j-1]+N[i][j+1]+N[i+1][j-1]+N[i+1][j]+N[i+1][j+1];
 
             if (voisin==3)
             {
-                New[i][j]=1;
+                T[i][j]=1;
             }
-            else if (T[i][j]==1 && voisin<2){
-                New[i][j]=0;
-            }
-            else {
-                New[i][j]=T[i][j];
+            else if (N[i][j]==1 && (voisin<2 || voisin>3))
+            {
+                T[i][j]=0;
             }
         }
     }
-    T=New;
-    printTab(T,n,n);
+
+    freeTabInt(N,n,n);
     return T;
 }
+
 void get_input(int ** T, int n, int m)
 {
     /*
     r�cup�re les diff�rents event dont les entr�s clavier 
     et la croix pour fermer
     */
-
-    SDL_WaitEvent(&event);
-    switch (event.type)
-    {
-    case SDL_QUIT:
-        printf("Voulez vous sauvegarder ? O/N\n");
-        char c;
-        scanf("%c", &c);
-        if (c != 'o' && c!='n') scanf("%c", &c);
-        if(c == 'O' || c == 'o' || c == '0')
-            saveMap(T, n, m);
-        gameRunning = 0;
-        break;
-    case SDL_KEYDOWN:
-        switch (event.key.keysym.sym) {
-        case SDLK_SPACE:
-            mooveBlock(T, n);
+    int cont=1;
+    while(cont){   
+        SDL_WaitEvent(&event);
+        switch (event.type)
+        {
+        case SDL_QUIT:
+            printf("Voulez vous sauvegarder ? O/N\n");
+            char c;
+            scanf("%c", &c);
+            if (c != 'o' && c!='n') scanf("%c", &c);
+            if(c == 'O' || c == 'o' || c == '0')
+                saveMap(T, n, m);
+            gameRunning = 0;
+            cont=0;
             break;
-        case SDLK_s:
-            saveMap(T, n, m);
-            break;
-        case SDLK_l:
-            //freeTabInt(T, n, m);
-            //T = loadMap(&n, &m);
-            break;
-
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym) {
+            case SDLK_SPACE:
+                T=mooveBlock(T, n);
+                cont=0;
+                break;
+            case SDLK_s:
+                saveMap(T, n, m);
+                cont=0;
+                break;
+            default:
+                break;
+            }
         default:
             break;
         }
-    default:
-        break;
     }
 }
 
@@ -175,38 +191,24 @@ void draw(int** T, int n, int m)
 
 	SDL_Rect position;
     int i;
-	for (i=0;i<t;i++)
+	for (i=0;i<n;i++)
     {
-		for (int j=0;j<t;j+=2)
+		for (int j=0;j<m;j++)
         {	
-				position.x=i*R;
-				position.y=j*R;
+            if (T[i][j]==1)
+            {
+                position.y=i*R;
+				position.x=j*R;
 				SDL_BlitSurface(rectangle,NULL,ecran,&position);
-			}
-        i++;
-        for (int j=1;j<t;j+=2)
-        {	
-				position.x=i*R;
-				position.y=j*R;
-				SDL_BlitSurface(rectangle,NULL,ecran,&position);
+            }
 		}
+       
 	}
 	
 		
     SDL_Flip(ecran);
 }
 
-void freeTabInt(int** T, int nbrLine, int nbrColumn)
-{
-    /*
-    Lib�re un tableau 2D d'entier
-    */
-	for (int i = 0; i < nbrLine; i++)
-	{
-		free(T[i]);
-	}
-	free(T);
-}
 
 void unload(int ** T, int n, int m)
 {
@@ -221,7 +223,8 @@ void unload(int ** T, int n, int m)
 int ** loadMap(int* n, int* m)
 {
     char S[100];
-    printf("Entrer le nom du fichier :\n");
+    printf("fichiers disponibles: 1) clignotant\v 2) ruche\v 3) planneur\n");
+    printf("Entrer le numéros du fichier :\n");
     scanf("%s", S);
     char* fileName = (char*)calloc(strlen(S)+10, sizeof(char));
     sprintf(fileName, "save/%s", S);
@@ -254,6 +257,64 @@ int ** loadMap(int* n, int* m)
     printf("---------------------------\n\n\n");
     return T;
 }
+
+void CreatMap(int **T,int n)
+{
+    /*
+   CREATION DE MAP SUR L'INTERFACE GRAPHIQUE
+    */
+   
+   draw(T,n,n);
+   
+    int cont=1;
+    int x,y;
+    while(cont){   
+        SDL_WaitEvent(&event);
+        switch (event.type)
+        {
+        case SDL_QUIT:
+            printf("Voulez vous sauvegarder ? O/N\n");
+            char c;
+            scanf("%c", &c);
+            if (c != 'o' && c!='n') scanf("%c", &c);
+            if(c == 'O' || c == 'o' || c == '0')
+                saveMap(T, n, n);
+            gameRunning = 0;
+            cont=0;
+            break;
+        case SDL_MOUSEBUTTONDOWN: // Click de souris 
+            
+            y=(event.button.x)/R;
+            x=(event.button.y)/R;
+            T[x][y]=1-T[x][y];
+            draw(T,n,n);
+            break;
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym) 
+            {
+            case SDLK_RETURN:
+                cont=0;
+                printf("voulez vous sauvegarder cette map pour plus tard? O/N\n");
+                char ch;
+                do
+                {
+                    scanf("%c",&ch);
+                } 
+                while(ch!='o'&& ch!='O'&& ch!='0' && ch!='n' && ch!='N');
+
+                if (ch=='o'|| ch=='O'||ch=='0')
+                    saveMap(T,n,n);
+
+                break;
+            default:
+                break;
+            }
+        default:
+            break;
+        }
+    }
+}
+
 int ** load(int n) 
 {
     /*
@@ -273,7 +334,7 @@ int ** load(int n)
 
     ecran = NULL;
 
-    if ((ecran = SDL_SetVideoMode(R*t, R*t, 32, SDL_HWSURFACE)) == NULL)
+    if ((ecran = SDL_SetVideoMode(R*n, R*n, 32, SDL_HWSURFACE)) == NULL)
     {
         fprintf(stderr, "Erreur VideoMode %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
@@ -286,19 +347,19 @@ int ** load(int n)
 
     if (ch=='n' || ch=='N')
     {
-    T = callocTabInt(n, n);  
-    }
-    else{
 
+    //printf("Quel taille de fenêtre souhaitez vous? (pour 5 pixels par exemple, tapez 5)");
+    //scanf("%d",&n);
+    printf("Cliquer sur la surface pour créer votre figure, puis tapez échape lorqu'elle est finie\n");
+
+    T = callocTabInt(n, n);  
+    CreatMap(T,n);
+
+    }
+    else
+    { 
         T=loadMap(&n,&n);
     }
-
-    /*
-    generateNewBlock(T, n, m, int((n + 0.5) / 2));
-    printf("Point = %d\n", point);
-    printTab(T, n, m);
-    printf("---------------------------\n\n\n");
-    */
     return T;
 }
 
@@ -307,22 +368,25 @@ void logic()
     /*
     boucle de jeu 
     */
-    int n = t;
-    int m = n;
+    int n=t;
     int ** T = load(n);
+    printf("Cliquez sur la touche espace pour faire évoluer votre jeu\n");
     while (gameRunning)
     {   
         tick++;
-        update(T, n, m);
-        draw(T, n, m);
+        draw(T, n, n);
+        update(T, n, n);
+        printTab(T,n,n);
+        
+
     }
     printf("Unload\n");
-    unload(T, n, m);
+    unload(T, n, n);
 }
 
 int main() { 
 
-    logic(R);
+    logic();
  
 	return 0; 
 } 
