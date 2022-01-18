@@ -1,3 +1,2 @@
 # JeuDeLaVie
-Why skeletons don't go to any party?
-Because they have no body to go with them
+Un jeu de la vie en c. Il y a un makefile. 
