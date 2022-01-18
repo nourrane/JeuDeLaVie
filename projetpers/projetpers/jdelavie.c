@@ -334,11 +334,10 @@ void createcran(int n)
 
 int ** load(int * n) 
 {
-
     printf("n: commencer une nouvelle partie \nc: continuer une partie enregistrée\n");
     int** T;
     char ch;
-    scanf("%c", &ch);
+    scanf("%c", &ch); 
 
     if (ch=='n' || ch=='N')
     {
